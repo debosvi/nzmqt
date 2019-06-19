@@ -73,8 +73,10 @@ protected:
 protected slots:
     void messageReceived(const QList<QByteArray>& message)
     {
-        qDebug() << "Subscriber> " << message;
-        emit pingReceived(message);
+        if(message[0] == topic_) {
+            qDebug() << "Subscriber> " << message;
+            emit pingReceived(message);
+        }
     }
 
 private:
