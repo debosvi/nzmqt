@@ -85,6 +85,8 @@ protected slots:
         {
             QStringList args = arguments();
 
+//             qDebug() << "args nb: " << args.size();
+            
             if (args.size() == 1 || "-h" == args[1] || "--help" == args[1])
             {
                 printUsage(cout);
@@ -92,90 +94,123 @@ protected slots:
                 return;
             }
 
-            QString command = args[1];
-            SampleBase* commandImpl = 0;
-
             ZMQContext* context = createDefaultContext(this);
             context->start();
 
-            if ("pubsub-publisher" == command)
-            {
-                if (args.size() < 4)
-                    throw std::runtime_error("Mandatory argument(s) missing!");
+            int loop=0;
+            SampleBase* commandImpl = 0;
+            QList<SampleBase*> cmdList;
 
-                QString address = args[2];
-                QString topic = args[3];
-                commandImpl = new pubsub::Publisher(*context, address, topic, this);
+            while(true) {
+                QString command = args[1];
+                // qDebug() << "command: " << command;
+
+                if ("pubsub-publisher" == command)
+                {
+                    if (args.size() < 4+3*loop)
+                        throw std::runtime_error("Mandatory argument(s) missing!");
+
+                    QString address = args[2+3*loop];
+                    QString topic = args[3+3*loop];
+                    
+//                     qDebug() << "address: " << address;
+//                     qDebug() << "topic: " << topic;
+
+                    commandImpl = new pubsub::Publisher(*context, address, topic, this);
+                }
+                else if ("pubsub-subscriber" == command)
+                {
+                    if (args.size() < (4+3*loop)) {
+                        if(!loop)
+                            throw std::runtime_error("Mandatory argument(s) missing!");
+                        else break;
+                    }
+
+                    QString address = args[2+3*loop];
+                    QString topic = args[3+3*loop];
+                    
+//                     qDebug() << "address: " << address;
+//                     qDebug() << "topic: " << topic;
+
+                    commandImpl = new pubsub::Subscriber(*context, address, topic, this);
+                }
+                else if ("reqrep-replier" == command)
+                {
+                    if (args.size() < 4+3*loop)
+                        throw std::runtime_error("Mandatory argument(s) missing!");
+
+                    QString address = args[2+3*loop];
+                    QString responseMsg = args[3+3*loop];
+                    commandImpl = new reqrep::Replier(*context, address, responseMsg, this);
+                }
+                else if ("reqrep-requester" == command)
+                {
+                    if (args.size() < 4+3*loop)
+                        throw std::runtime_error("Mandatory argument(s) missing!");
+
+                    QString address = args[2+3*loop];
+                    QString requestMsg = args[3+3*loop];
+                    commandImpl = new reqrep::Requester(*context, address, requestMsg, this);
+                }
+                else if ("pushpull-ventilator" == command)
+                {
+                    if (args.size() < 5+4*loop)
+                        throw std::runtime_error("Mandatory argument(s) missing!");
+
+                    QString ventilatorAddress = args[2+4*loop];
+                    QString sinkAddress = args[3+4*loop];
+                    quint32 numberOfWorkItems = args[4+4*loop].toUInt();
+                    commandImpl = new pushpull::Ventilator(*context, ventilatorAddress, sinkAddress, numberOfWorkItems, this);
+
+                    // Wait for user start.
+                    QTextStream outStream(stdout);
+                    outStream << "Press ENTER if workers and sink are ready!" << ::flush;
+                    QTextStream inStream(stdin);
+                    inStream.readLine();
+                }
+                else if ("pushpull-worker" == command)
+                {
+                    if (args.size() < 4+3*loop)
+                        throw std::runtime_error("Mandatory argument(s) missing!");
+
+                    QString ventilatorAddress = args[2+3*loop];
+                    QString sinkAddress = args[3+3*loop];
+                    commandImpl = new pushpull::Worker(*context, ventilatorAddress, sinkAddress, this);
+                }
+                else if ("pushpull-sink" == command)
+                {
+                    if (args.size() < 3+2*loop)
+                        throw std::runtime_error("Mandatory argument(s) missing!");
+
+                    QString sinkAddress = args[2+2*loop];
+                    commandImpl = new pushpull::Sink(*context, sinkAddress, this);
+                }
+                else
+                {
+                    throw std::runtime_error(QString("Unknown command: '%1'").arg(command).toStdString());
+                }
+                
+                cmdList << commandImpl;
+                
+                loop++;
+                int check=1+3*loop;
+//                 qDebug() << "loop: " << loop << "check (" << args.size() << ">" << check << ")";
+                if(args.size()>check) {
+//                     qDebug() << "loop args";
+                }
+                else {
+                    break;
+                }
             }
-            else if ("pubsub-subscriber" == command)
-            {
-                if (args.size() < 4)
-                    throw std::runtime_error("Mandatory argument(s) missing!");
 
-                QString address = args[2];
-                QString topic = args[3];
-                commandImpl = new pubsub::Subscriber(*context, address, topic, this);
+            QList<SampleBase*>::iterator it;
+            for (it = cmdList.begin(); it != cmdList.end(); ++it) {
+//                 qDebug() << "start";
+                // If command is finished we quit application.
+                connect((*it), SIGNAL(finished()), SLOT(quit()));
+                // Start command.
+                (*it)->start();
             }
-            else if ("reqrep-replier" == command)
-            {
-                if (args.size() < 4)
-                    throw std::runtime_error("Mandatory argument(s) missing!");
-
-                QString address = args[2];
-                QString responseMsg = args[3];
-                commandImpl = new reqrep::Replier(*context, address, responseMsg, this);
-            }
-            else if ("reqrep-requester" == command)
-            {
-                if (args.size() < 4)
-                    throw std::runtime_error("Mandatory argument(s) missing!");
-
-                QString address = args[2];
-                QString requestMsg = args[3];
-                commandImpl = new reqrep::Requester(*context, address, requestMsg, this);
-            }
-            else if ("pushpull-ventilator" == command)
-            {
-                if (args.size() < 5)
-                    throw std::runtime_error("Mandatory argument(s) missing!");
-
-                QString ventilatorAddress = args[2];
-                QString sinkAddress = args[3];
-                quint32 numberOfWorkItems = args[4].toUInt();
-                commandImpl = new pushpull::Ventilator(*context, ventilatorAddress, sinkAddress, numberOfWorkItems, this);
-
-                // Wait for user start.
-                QTextStream outStream(stdout);
-                outStream << "Press ENTER if workers and sink are ready!" << ::flush;
-                QTextStream inStream(stdin);
-                inStream.readLine();
-            }
-            else if ("pushpull-worker" == command)
-            {
-                if (args.size() < 4)
-                    throw std::runtime_error("Mandatory argument(s) missing!");
-
-                QString ventilatorAddress = args[2];
-                QString sinkAddress = args[3];
-                commandImpl = new pushpull::Worker(*context, ventilatorAddress, sinkAddress, this);
-            }
-            else if ("pushpull-sink" == command)
-            {
-                if (args.size() < 3)
-                    throw std::runtime_error("Mandatory argument(s) missing!");
-
-                QString sinkAddress = args[2];
-                commandImpl = new pushpull::Sink(*context, sinkAddress, this);
-            }
-            else
-            {
-                throw std::runtime_error(QString("Unknown command: '%1'").arg(command).toStdString());
-            }
-
-            // If command is finished we quit application.
-            connect(commandImpl, SIGNAL(finished()), SLOT(quit()));
-            // Start command.
-            commandImpl->start();
         }
         catch (std::exception& ex)
         {
