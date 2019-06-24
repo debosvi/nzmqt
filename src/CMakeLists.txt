@@ -29,8 +29,7 @@ add_library(${NZMQT_LIB_NAME} SHARED
 
 target_link_libraries(${NZMQT_LIB_NAME} 
     ${CUSTOM_QT_LIBRARIES}
-    pthread 
-    zmq
+    ${ZeroMQ_LIBRARY}
 )
 
 ## application
