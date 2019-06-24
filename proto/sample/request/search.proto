@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package sample.request;
+
+import "simple.proto";
+import "sample/header.proto";
+
+message Search {
+  sample.Header header = 1;
+  Simple simple = 2;
+  string query = 3;
+  int32 page_number = 4;
+  int32 result_per_page = 5;
+} 
