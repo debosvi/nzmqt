@@ -97,21 +97,21 @@ protected slots:
             ZMQContext* context = createDefaultContext(this);
             context->start();
 
-            int loop=0;
+            int cpt_args=1;
             SampleBase* commandImpl = 0;
             QList<SampleBase*> cmdList;
 
             while(true) {
-                QString command = args[1];
-                // qDebug() << "command: " << command;
+                QString command = args[cpt_args];
+//                 qDebug() << "command: " << command;
 
                 if ("pubsub-publisher" == command)
                 {
-                    if (args.size() < 4+3*loop)
+                    if (args.size() < (cpt_args+3))
                         throw std::runtime_error("Mandatory argument(s) missing!");
 
-                    QString address = args[2+3*loop];
-                    QString topic = args[3+3*loop];
+                    QString address = args[++cpt_args];
+                    QString topic = args[++cpt_args];
                     
 //                     qDebug() << "address: " << address;
 //                     qDebug() << "topic: " << topic;
@@ -120,14 +120,11 @@ protected slots:
                 }
                 else if ("pubsub-subscriber" == command)
                 {
-                    if (args.size() < (4+3*loop)) {
-                        if(!loop)
-                            throw std::runtime_error("Mandatory argument(s) missing!");
-                        else break;
-                    }
+                    if (args.size() < (cpt_args+3))
+                        throw std::runtime_error("Mandatory argument(s) missing!");
 
-                    QString address = args[2+3*loop];
-                    QString topic = args[3+3*loop];
+                    QString address = args[++cpt_args];
+                    QString topic = args[++cpt_args];
                     
 //                     qDebug() << "address: " << address;
 //                     qDebug() << "topic: " << topic;
@@ -136,30 +133,30 @@ protected slots:
                 }
                 else if ("reqrep-replier" == command)
                 {
-                    if (args.size() < 4+3*loop)
+                    if (args.size() < (cpt_args+3))
                         throw std::runtime_error("Mandatory argument(s) missing!");
 
-                    QString address = args[2+3*loop];
-                    QString responseMsg = args[3+3*loop];
+                    QString address = args[++cpt_args];
+                    QString responseMsg = args[++cpt_args];
                     commandImpl = new reqrep::Replier(*context, address, responseMsg, this);
                 }
                 else if ("reqrep-requester" == command)
                 {
-                    if (args.size() < 4+3*loop)
+                    if (args.size() < (cpt_args+3))
                         throw std::runtime_error("Mandatory argument(s) missing!");
 
-                    QString address = args[2+3*loop];
-                    QString requestMsg = args[3+3*loop];
+                    QString address = args[++cpt_args];
+                    QString requestMsg = args[++cpt_args];
                     commandImpl = new reqrep::Requester(*context, address, requestMsg, this);
                 }
                 else if ("pushpull-ventilator" == command)
                 {
-                    if (args.size() < 5+4*loop)
+                    if (args.size() < (cpt_args+4))
                         throw std::runtime_error("Mandatory argument(s) missing!");
 
-                    QString ventilatorAddress = args[2+4*loop];
-                    QString sinkAddress = args[3+4*loop];
-                    quint32 numberOfWorkItems = args[4+4*loop].toUInt();
+                    QString ventilatorAddress = args[++cpt_args];
+                    QString sinkAddress = args[++cpt_args];
+                    quint32 numberOfWorkItems = args[++cpt_args].toUInt();
                     commandImpl = new pushpull::Ventilator(*context, ventilatorAddress, sinkAddress, numberOfWorkItems, this);
 
                     // Wait for user start.
@@ -170,19 +167,19 @@ protected slots:
                 }
                 else if ("pushpull-worker" == command)
                 {
-                    if (args.size() < 4+3*loop)
+                    if (args.size() < (cpt_args+3))
                         throw std::runtime_error("Mandatory argument(s) missing!");
 
-                    QString ventilatorAddress = args[2+3*loop];
-                    QString sinkAddress = args[3+3*loop];
+                    QString ventilatorAddress = args[++cpt_args];
+                    QString sinkAddress = args[++cpt_args];
                     commandImpl = new pushpull::Worker(*context, ventilatorAddress, sinkAddress, this);
                 }
                 else if ("pushpull-sink" == command)
                 {
-                    if (args.size() < 3+2*loop)
+                    if (args.size() < (cpt_args+2))
                         throw std::runtime_error("Mandatory argument(s) missing!");
 
-                    QString sinkAddress = args[2+2*loop];
+                    QString sinkAddress = args[++cpt_args];
                     commandImpl = new pushpull::Sink(*context, sinkAddress, this);
                 }
                 else
@@ -192,10 +189,9 @@ protected slots:
                 
                 cmdList << commandImpl;
                 
-                loop++;
-                int check=1+3*loop;
-//                 qDebug() << "loop: " << loop << "check (" << args.size() << ">" << check << ")";
-                if(args.size()>check) {
+                ++cpt_args;
+//                 qDebug() << "check (" << args.size() << ">" << cpt_args << ")";
+                if(args.size()>cpt_args) {
 //                     qDebug() << "loop args";
                 }
                 else {
