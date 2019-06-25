@@ -3,7 +3,7 @@ syntax = "proto3";
 package sample.request;
 
 import "simple.proto";
-import "sample/header.proto";
+import "header.proto";
 
 message Search {
   sample.Header header = 1;
