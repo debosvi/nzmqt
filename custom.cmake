@@ -6,7 +6,10 @@ SET(LIBRARY_OUTPUT_PATH ${root_output_dir}/lib)
 
 list (APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-find_package(PkgConfig)
+find_package(Protobuf REQUIRED)
+include_directories(${PROTOBUF_INCLUDE_DIRS})
+
+find_package(PkgConfig REQUIRED)
 
 ## use pkg-config to get hints for 0mq locations
 pkg_check_modules(PC_ZeroMQ QUIET zmq)
