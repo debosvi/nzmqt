@@ -1,8 +1,16 @@
 
+add_custom_target(protobuf_gencpp ALL
+    COMMENT "Protobuf full generation"
+)
+    
+set(GEN_CPP_ROOTDIR ${CMAKE_BINARY_DIR}/gen_cpp/nzmqt)
+
+set_property(DIRECTORY PROPERTY ADDITIONAL_MAKE_CLEAN_FILES "${GEN_CPP_ROOTDIR}" )
+
 find_program (PROTOC_BIN
     NAMES protoc
     DOC "Protobuf compiler binary string"
-    )
+)
          
 message(STATUS "Protobuf compiler: ${PROTOC_BIN}")
 
@@ -22,9 +30,7 @@ function(PROTOBUF_GEN_MSG)
 
     message(STATUS "protobuf DIRECTORY: ${PROTOBUF_GEN_MSG_DIRECTORY}")
     message(STATUS "protobuf FILES: ${PROTOBUF_GEN_MSG_FILES}")
-    
-    set(GEN_CPP_ROOTDIR ${CMAKE_BINARY_DIR}/gen_cpp/nzmqt)
-    file(MAKE_DIRECTORY ${GEN_CPP_ROOTDIR})
+
         
     foreach(IN_PROTO ${PROTOBUF_GEN_MSG_FILES})
         set(in_file ${PROTOBUF_GEN_MSG_DIRECTORY}/${IN_PROTO})
@@ -54,12 +60,14 @@ function(PROTOBUF_GEN_MSG)
 #         message(STATUS "pkg string: ${pkg_string}")
         string(REGEX REPLACE "\\."  "/" pkg_dir ${pkg_string})
 #         message(STATUS "pkg dir: ${pkg_dir}")
-            
-        exec_program(${PROTOC_BIN} ${CMAKE_BINARY_DIR}
-             ARGS --cpp_out=${GEN_CPP_ROOTDIR} --proto_path=${PROTOBUF_GEN_MSG_DIRECTORY} ${in_file}
-             OUTPUT_VARIABLE no_out
-#              [RETURN_VALUE <var>]
-)
+          
+        add_custom_command(TARGET protobuf_gencpp 
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${GEN_CPP_ROOTDIR}
+            COMMAND ${PROTOC_BIN} ARGS --cpp_out=${GEN_CPP_ROOTDIR} --proto_path=${PROTOBUF_GEN_MSG_DIRECTORY} ${in_file}
+            DEPENDS ${in_file}
+            COMMENT "Generating protobuf CPP files for ${in_file}"
+            VERBATIM
+        )
     
     endforeach()
 endfunction()
