@@ -15,4 +15,5 @@ set(PROTOBUF_LIB_NAME protobuf)
 
 add_subdirectory(proto)
 add_subdirectory(src)
+add_subdirectory(sample)
 # add_subdirectory(app)
